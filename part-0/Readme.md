@@ -6,7 +6,7 @@ By Martin Lehner ([@anotherlehner](https://github.com/anotherlehner))
 
 Download Zig from the ziglang homepage: https://ziglang.org/download/
 
-The code in this repository was last built and tested with Zig 0.15.2.
+This tutorial uses Zig 0.17's build system and standard-library APIs.
 
 ## Create the project
 
@@ -49,34 +49,43 @@ NOTE: The name of the library on OSX is `tcod`, not `libtcod`, which confused me
 
 ## Configuring Zig to build using libtcod
 
-To get Zig to compile and link with libtcod we need to make a couple of changes to the `build.zig` file. Between `exe.setBuildMode` and `exe.install` I added a some lines to tell I want to link with libc and libtcod:
+The build script translates `src/c.h` into a C module and imports it into the
+root Zig module. The root module also links libc and libtcod (named `tcod` on
+macOS):
 
 ```zig
-exe.linkLibC();
-b.installArtifact(exe);
+const c_translation = b.addTranslateC(.{
+    .root_source_file = b.path("src/c.h"),
+    .target = target,
+    .optimize = optimize,
+});
+const c_module = c_translation.createModule();
 
-// Check if TARGET is macOS
+const root_module = b.createModule(.{
+    .root_source_file = b.path("src/main.zig"),
+    .target = target,
+    .optimize = optimize,
+    .link_libc = true,
+});
+root_module.addImport("c", c_module);
+
 if (target.result.os.tag == .macos) {
-    exe.linkSystemLibrary("tcod"); // Different name on macos
-
-    // Apple silicon
-    exe.addIncludePath(.{ .cwd_relative = "/opt/homebrew/include" });
-    exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-
-    // There may be a slightly different path/setup for intel macs? I'm 
-    // unable to verify this
+    root_module.linkSystemLibrary("tcod", .{});
+    root_module.addIncludePath(.{ .cwd_relative = "/opt/homebrew/include" });
+    root_module.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
 } else {
-    exe.linkSystemLibrary("libtcod"); // Familiar linux name
+    root_module.linkSystemLibrary("libtcod", .{});
 }
 ```
 
-The other thing we need to do is import the C header in the `main.zig` source file itself. This tells Zig to import that header and make the C code available for us to call:
+In Zig source, import the declarations provided by that build module:
 
 ```zig
-const c = @cImport({
-    @cInclude("libtcod.h");
-});
+const c = @import("c");
 ```
+
+The `c` module is generated from the header by `addTranslateC`, making the
+translated declarations available to the executable and test modules.
 
 To make sure things were working right I also grabbed a constant from inside the libtcod C header and tried printing it out in the Zig log statement:
 
@@ -100,38 +109,28 @@ Hello libtcod world?
 
 ## Tests
 
-I like tests. Zig gives us tests embedded in the code, which we can easily run with `zig build test`. First we need to add some content to `build.zig` to support libraries in our tests:
+I like tests. Zig gives us tests embedded in the code, which we can easily run with `zig build test`. Tests also need a root module that imports the translated C module and links
+the same libraries as the executable:
 
 ```zig
-// Tests
-const exe_tests = b.addTest(.{
-    .root_module = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-    }),
+const test_module = b.createModule(.{
+    .root_source_file = b.path("src/main.zig"),
+    .target = target,
+    .optimize = optimize,
+    .link_libc = true,
 });
-exe_tests.linkLibC();
+test_module.addImport("c", c_module);
+test_module.linkSystemLibrary("libtcod", .{});
 
-// Check if TARGET is macOS
-if (target.result.os.tag == .macos) {
-    exe_tests.linkSystemLibrary("tcod");
+const exe_tests = b.addTest(.{ .root_module = test_module });
 
-    // specific to Apple Silicon (M1/M2/M3)
-    exe_tests.addIncludePath(.{ .cwd_relative = "/opt/homebrew/include" });
-    exe_tests.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-
-    // Optional: Support Intel Macs too (they use /usr/local)
-    exe_tests.addIncludePath(.{ .cwd_relative = "/usr/local/include" });
-    exe_tests.addLibraryPath(.{ .cwd_relative = "/usr/local/lib" });
-} else {
-    exe_tests.linkSystemLibrary("libtcod");
-}
-
-// Set up the `zig build test` command
 const run_tests = b.addRunArtifact(exe_tests);
 const run_tests_step = b.step("test", "Run unit tests");
 run_tests_step.dependOn(&run_tests.step);
 ```
+
+Use the same platform-specific library and include-path configuration for
+`test_module` as for `root_module`.
 
 Running `zig build test` will result in no output by default (no news is good news) but if you want to see all the details do:
 

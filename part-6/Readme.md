@@ -33,7 +33,11 @@ procgen.zig            | dungeon generation and entity placement
 - _TODO: move entity to it's own module, probably combined with `entity_factories` for now_
 - _TODO: remove `models.zig`_
 
-`tcod.zig`: I don't see any reason to change this. I need to keep a single point in the program for the libtcod `cImport` and place to wrap/alias all interaction with the external library and this continues to make sense to me as a place for that to happen.
+`tcod.zig`: I don't see any reason to change this. I need to keep a single
+point in the program for the libtcod declarations imported from the build's
+translated `c` module and a place to wrap/alias all interaction with the
+external library; this continues to make sense to me as a place for that to
+happen.
 - `renderMap`: One function in this module that I think may not belong is the render map function. The reason this is here is because rendering using the C API required knowledge of the inside of the libtcod `TCOD_Console` struct. At the time I wrote this it ended up in `tcod.zig` for lack of a better place. I'm starting to think possibly a _renderer_ module of some kind might make sense instead. A module that wraps all complex drawing of data structures out to the libtcod library system.
     - _TODO: create a renderer module_
 
@@ -81,11 +85,11 @@ As part of part 6 one of the things I needed to figure out was pathfinding. It's
 Another way to do pathfinding is by calling a libtcod function and providing a callback. During libtcod processing the callback function is called repeatedly to check for the cost of a particular map location. This is the method I chose to use and it provided a use case for callback functions in Zig called from C. Here's what that looks like:
 
 ```zig
-fn pathFunction(xFrom: c_int, yFrom: c_int, xTo: c_int, yTo: c_int, userData: ?*anyopaque) callconv(.C) f32 {
-    var ctx = @ptrCast(*PathContext, @alignCast(@alignOf(*PathContext), userData.?));
+fn pathFunction(xFrom: c_int, yFrom: c_int, xTo: c_int, yTo: c_int, userData: ?*anyopaque) callconv(.c) f32 {
+    const ctx: *PathContext = @ptrCast(@alignCast(userData.?));
     _ = xFrom;
     _ = yFrom;
-    var isTarget = ctx.target.x == xTo and ctx.target.y == yTo;
+    const isTarget = ctx.target.x == xTo and ctx.target.y == yTo;
     if (!isTarget and (!ctx.mp.isWalkable(xTo, yTo) or ctx.mp.isBlocked(xTo, yTo))) {
         // the way is blocked and have not reached target
         return 0.0;
@@ -112,11 +116,12 @@ if (!tcod.pathIsEmpty(pathToTarget)) {
 }
 ```
 
-The `pathFunction` function is a Zig functon that takes `c_int`s for x/y from and x/y destination as well as a generic "user data" pointer. This pointer needs to be `anyopaque` because it can be anything (a C void pointer). It's also optional. The function returns a float that represents the cost in the graph for pathfinding through the given map cells. Since this function is going to be called from C we also need the `callconv(.C)` to set the calling convention, which tells how arguments and return values are handled in registers and things.
+The `pathFunction` function is a Zig function that takes `c_int`s for x/y from and x/y destination as well as a generic "user data" pointer. This pointer needs to be `anyopaque` because it can be anything (a C void pointer). It's also optional. The function returns a float that represents the cost in the graph for pathfinding through the given map cells. Since this function is going to be called from C we also need the `callconv(.c)` calling convention, which tells how arguments and return values are handled in registers and things.
 
 The second chunk of code creates a wrapper struct I call the `PathContext` and provide this along with the path function to the libtcod function to create a new path using a callback function. The path context is the `anyopaque` described earlier. I just send in the address to it and it's up to me in the path function to cast that generic pointer back to a path context.
 
-After the setup is done and the path machinery is created I call the function to compute the path and can then "walk" each coordinate in it.
+After the setup is done and the path machinery is created I call the function
+to compute the path and can then "walk" each coordinate in it.
 
 Notice that we only use the "next" coordinate in the path here rather than the whole thing. The reason is we're just getting a monster's next destination cell during their turn. Once this is done and the move takes place the function continues on to other work and deletes the path. Next turn we'll create a new path targetting the player and get a little closer.
 
@@ -238,9 +243,3 @@ This `consolePrint` function just takes a `[]u8` array and prints all the charac
 ## Conclusion
 
 Screenshot of [the new stuffs](images/dead_monsters.png).
-
-## Zig 0.17 upgrade
-
-The current source translates `src/c.h` through `addTranslateC` in `build.zig`; `tcod.zig` imports that shared C module using `@import("c")` rather than the removed `@cImport` builtin. The header includes libtcod and selects SDL2 or SDL3 according to platform, with matching system libraries configured for the executable and test targets.
-
-`main.zig` now uses `std.heap.SafeAllocator` because `GeneralPurposeAllocator` is no longer available in Zig 0.17. Its `deinit` result is a leak count and is checked on exit. Dungeon and monster generation seed `std.Random.DefaultPrng` from the C `time(null)` function, replacing the removed `std.time.Instant` API. The C callback used for pathfinding remains part of the design; its callback calling convention and pathfinding behavior are unchanged.
