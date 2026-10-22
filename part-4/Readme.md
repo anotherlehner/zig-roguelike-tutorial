@@ -102,3 +102,9 @@ Some comments:
 ## Conclusion
 
 With part 4 done a new screenshot is born: [screenshot](images/fov.png).
+
+## Zig 0.17 upgrade
+
+The build now translates `src/c.h` with `addTranslateC` and exposes the resulting C declarations as the `c` module imported by `tcod.zig`. The header includes libtcod and the platform-appropriate SDL header (SDL2 except on macOS, where SDL3 is used); the build links the matching libraries for both the executable and tests.
+
+The application allocator is now `std.heap.SafeAllocator`, replacing the removed `GeneralPurposeAllocator` API. Its deinitializer reports a leak count, which `main.zig` checks when the game exits. Dungeon and tunnel random generators use `std.Random.DefaultPrng` seeded from `time(null)` through the translated C declarations, replacing the removed `std.time.Instant` API.

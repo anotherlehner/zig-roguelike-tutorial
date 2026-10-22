@@ -4,9 +4,7 @@ const std = @import("std");
 const models = @import("models.zig");
 const expect = std.testing.expect;
 
-const c = @cImport({
-    @cInclude("libtcod.h");
-});
+const c = @import("c");
 
 pub const TcodConsole = *c.TCOD_Console;
 pub const TcodColorRGBA = c.TCOD_ColorRGBA;
@@ -49,7 +47,7 @@ pub fn consoleClear(con: TcodConsole) void {
 }
 
 pub fn consoleBlit(con: TcodConsole, width: i32, height: i32) void {
-    c.TCOD_console_blit(con,0,0,width,height,null,0,0,1.0,1.0);
+    c.TCOD_console_blit(con, 0, 0, width, height, null, 0, 0, 1.0, 1.0);
 }
 
 pub fn sysCheckForEvent(key: *TcodKey) void {
@@ -73,5 +71,5 @@ pub fn lineInit(xFrom: i32, yFrom: i32, xTo: i32, yTo: i32) void {
 }
 
 pub fn lineStep(x: *i32, y: *i32) bool {
-    return c.TCOD_line_step(x,y);
+    return c.TCOD_line_step(x, y);
 }

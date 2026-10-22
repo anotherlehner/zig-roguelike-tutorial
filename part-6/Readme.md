@@ -238,3 +238,9 @@ This `consolePrint` function just takes a `[]u8` array and prints all the charac
 ## Conclusion
 
 Screenshot of [the new stuffs](images/dead_monsters.png).
+
+## Zig 0.17 upgrade
+
+The current source translates `src/c.h` through `addTranslateC` in `build.zig`; `tcod.zig` imports that shared C module using `@import("c")` rather than the removed `@cImport` builtin. The header includes libtcod and selects SDL2 or SDL3 according to platform, with matching system libraries configured for the executable and test targets.
+
+`main.zig` now uses `std.heap.SafeAllocator` because `GeneralPurposeAllocator` is no longer available in Zig 0.17. Its `deinit` result is a leak count and is checked on exit. Dungeon and monster generation seed `std.Random.DefaultPrng` from the C `time(null)` function, replacing the removed `std.time.Instant` API. The C callback used for pathfinding remains part of the design; its callback calling convention and pathfinding behavior are unchanged.

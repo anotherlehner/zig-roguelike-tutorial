@@ -6,9 +6,7 @@ const constants = @import("constants.zig");
 const map = @import("map.zig");
 const expect = std.testing.expect;
 
-const c = @cImport({
-    @cInclude("libtcod.h");
-});
+const c = @import("c");
 
 pub const TcodConsole = *c.TCOD_Console;
 pub const TcodColorRGBA = c.TCOD_ColorRGBA;
@@ -41,17 +39,7 @@ pub fn init() TcodConsole {
 }
 
 pub fn initNewstyle() TcodContext {
-    const params = TcodContextParams{
-        .tcod_version = c.TCOD_COMPILEDVERSION,
-        .columns = constants.SCREEN_WIDTH,
-        .rows = constants.SCREEN_HEIGHT,
-        .tileset = initTileset(constants.TILESET),
-        .renderer_type = c.TCOD_RENDERER_SDL2,
-        .window_title = constants.TITLE,
-        .vsync = true,
-        .sdl_window_flags = null,
-        .console = consoleInitRoot(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT, "", false)
-    };
+    const params = TcodContextParams{ .tcod_version = c.TCOD_COMPILEDVERSION, .columns = constants.SCREEN_WIDTH, .rows = constants.SCREEN_HEIGHT, .tileset = initTileset(constants.TILESET), .renderer_type = c.TCOD_RENDERER_SDL2, .window_title = constants.TITLE, .vsync = true, .sdl_window_flags = null, .console = consoleInitRoot(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT, "", false) };
 
     const context = TcodContext{};
 
@@ -59,7 +47,7 @@ pub fn initNewstyle() TcodContext {
     if (tcodErr != 0) {
         @panic("Error creating context");
     }
-    
+
     return context;
 }
 

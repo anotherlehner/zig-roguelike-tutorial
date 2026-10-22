@@ -15,8 +15,7 @@ test {
 }
 
 pub fn main() anyerror!void {
-    const params = tcod.initContextParams(constants.SCREEN_WIDTH,
-        constants.SCREEN_HEIGHT);
+    const params = tcod.initContextParams(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT);
     const console = tcod.consoleNew(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT);
     const context = tcod.contextNew(params);
     defer {
@@ -24,21 +23,16 @@ pub fn main() anyerror!void {
         tcod.quit();
     }
 
-    var player = models.Entity{ .x = constants.SCREEN_WIDTH / 2, .y = constants.SCREEN_HEIGHT / 2,
-        .glyph = constants.ASCII_AT, .color = tcod.TcodColorRGB{ .r = 255, .g = 255,
-            .b = 255 } };
+    var player = models.Entity{ .x = constants.SCREEN_WIDTH / 2, .y = constants.SCREEN_HEIGHT / 2, .glyph = constants.ASCII_AT, .color = tcod.TcodColorRGB{ .r = 255, .g = 255, .b = 255 } };
 
-    var npc = models.Entity{ .x = constants.SCREEN_WIDTH / 2 - 5, .y = constants.SCREEN_HEIGHT / 2,
-        .glyph = constants.ASCII_AT, .color = tcod.TcodColorRGB{ .r = 255, .g = 255,
-            .b = 0 } };
+    var npc = models.Entity{ .x = constants.SCREEN_WIDTH / 2 - 5, .y = constants.SCREEN_HEIGHT / 2, .glyph = constants.ASCII_AT, .color = tcod.TcodColorRGB{ .r = 255, .g = 255, .b = 0 } };
 
     var entities = [_]*models.Entity{ &player, &npc };
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.SafeAllocator.init(std.heap.page_allocator, .{});
     const allocator = gpa.allocator();
     defer {
-        const leaked = gpa.deinit();
-        if (leaked == .leak) expect(false) catch @panic("FAIL");
+        if (gpa.deinit() != 0) expect(false) catch @panic("FAIL");
     }
 
     var map = try models.Map.init(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT, allocator);

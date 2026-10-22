@@ -6,23 +6,27 @@ Encountered a lot of challenges doing this part...
 
 ## Random
 
-In Zig, to create random integers we need to use the `std.rand` namespace struct `DefaultPrng`. This is the default pseudorandom number generator. It's a little odd at first because you make a `DefaultPrng` struct and then access the random functions through an embedded interface. Here's what that looks like:
+In Zig, to create random integers we use `std.Random.DefaultPrng`, the default pseudorandom number generator. You create a generator and access its random functions through the returned interface:
 
 ```zig
 // import
 const RndGen = std.Random.DefaultPrng;
 
-// initialize the randome generator
-var rnd = RndGen.init(0);
-
-// seed the random generator using the current time
-rnd.seed(@intCast(now.timestamp.sec));
+// initialize the random generator with the current Unix time
+const c_api = @import("c");
+var rnd = RndGen.init(@intCast(c_api.time(null)));
 
 // get a random i32 integer between room min and max size (at most means this is inclusive of room max size)
 const roomWidth = rnd.random().intRangeAtMost(i32, room_min_size, room_max_size);
 ```
 
 The part where I do `rnd.random().intRangeAtMost...` is the weird part for me. Usually the interface is something you pass around and call to get into the implementation underneath. This seems like it's reversed? I'd like to work on understanding this more and then try to setup something similar in my own structs.
+
+## Zig 0.17 upgrade
+
+The source now imports the translated C module with `@import("c")`; `build.zig` creates it from `src/c.h` using `addTranslateC`. The header includes libtcod, SDL2 on non-macOS platforms, and SDL3 on macOS, matching the libraries linked by the build.
+
+Zig 0.17 no longer provides `std.time.Instant`, so dungeon generation and tunnel selection seed `DefaultPrng` directly from the C `time(null)` function declared by `<time.h>` in `src/c.h`. The `ArrayList` code uses the current unmanaged-list API: initialize with `.empty` and pass the allocator to operations such as `append`, `deinit`, and `toOwnedSlice`.
 
 ## ArrayList
 

@@ -4,9 +4,7 @@ const std = @import("std");
 const models = @import("models.zig");
 const expect = std.testing.expect;
 
-const c = @cImport({
-    @cInclude("libtcod.h");
-});
+const c = @import("c");
 
 pub const TcodConsole = *c.TCOD_Console;
 pub const TcodColorRGBA = c.TCOD_ColorRGBA;

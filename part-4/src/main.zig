@@ -31,15 +31,13 @@ pub fn main() anyerror!void {
 
     var entities = [_]*models.Entity{ &player, &npc };
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.SafeAllocator.init(std.heap.page_allocator, .{});
     const allocator = gpa.allocator();
     defer {
-        const leaked = gpa.deinit();
-        if (leaked == .leak) expect(false) catch @panic("FAIL");
+        if (gpa.deinit() != 0) expect(false) catch @panic("FAIL");
     }
 
-    var map = try procgen.generateDungeon(constants.MAX_ROOMS, constants.ROOM_MIN_SIZE, constants.ROOM_MAX_SIZE, 
-        constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT, &player, allocator);
+    var map = try procgen.generateDungeon(constants.MAX_ROOMS, constants.ROOM_MIN_SIZE, constants.ROOM_MAX_SIZE, constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT, &player, allocator);
     defer {
         map.deinit();
     }

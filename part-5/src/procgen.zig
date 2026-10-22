@@ -1,6 +1,7 @@
 //! zig-roguelike, by Martin Lehner (@anotherlehner)
 
 const std = @import("std");
+const c_api = @import("c");
 const models = @import("models.zig");
 const tcod = @import("tcod.zig");
 const ef = @import("entity_factories.zig");
@@ -60,9 +61,7 @@ pub const RectangularRoom = struct {
 };
 
 pub fn placeEntities(room: *RectangularRoom, map: *models.Map, maxMonsters: i32, allocator: Allocator) !void {
-    var rnd = RndGen.init(0);
-    const now = try std.time.Instant.now();
-    rnd.seed(@intCast(now.timestamp.sec));
+    var rnd = RndGen.init(@intCast(c_api.time(null)));
 
     const nMonsters = rnd.random().intRangeAtMost(i32, 0, maxMonsters);
     var i: usize = 0;
@@ -80,9 +79,7 @@ pub fn placeEntities(room: *RectangularRoom, map: *models.Map, maxMonsters: i32,
 }
 
 pub fn tunnelBetween(start: Coord, end: Coord, allocator: Allocator) ![]Coord {
-    var rnd = RndGen.init(0);
-    const now = try std.time.Instant.now();
-    rnd.seed(@intCast(now.timestamp.sec));
+    var rnd = RndGen.init(@intCast(c_api.time(null)));
 
     var innerList: ArrayList(Coord) = .empty;
     defer innerList.deinit(allocator);
@@ -126,9 +123,7 @@ pub fn generateDungeon(max_rooms: usize, room_min_size: i32, room_max_size: i32,
     var rooms = try allocator.alloc(RectangularRoom, max_rooms);
     defer allocator.free(rooms);
 
-    var rnd = RndGen.init(0);
-    const now = try std.time.Instant.now();
-    rnd.seed(@intCast(now.timestamp.sec));
+    var rnd = RndGen.init(@intCast(c_api.time(null)));
 
     var i: usize = 0;
     while (i < max_rooms) {

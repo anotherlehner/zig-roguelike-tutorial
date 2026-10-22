@@ -6,9 +6,7 @@ const constants = @import("constants.zig");
 const map = @import("map.zig");
 const expect = std.testing.expect;
 
-const c = @cImport({
-    @cInclude("libtcod.h");
-});
+const c = @import("c");
 
 pub const TcodConsole = *c.TCOD_Console;
 pub const TcodColorRGBA = c.TCOD_ColorRGBA;
@@ -72,7 +70,7 @@ pub fn consoleClear(con: TcodConsole) void {
 }
 
 pub fn consoleBlit(con: TcodConsole, width: i32, height: i32) void {
-    c.TCOD_console_blit(con,0,0,width,height,null,0,0,1.0,1.0);
+    c.TCOD_console_blit(con, 0, 0, width, height, null, 0, 0, 1.0, 1.0);
 }
 
 pub fn sysCheckForEvent(key: *TcodKey) void {
@@ -88,7 +86,7 @@ pub fn lineInit(xFrom: i32, yFrom: i32, xTo: i32, yTo: i32) void {
 }
 
 pub fn lineStep(x: *i32, y: *i32) bool {
-    return c.TCOD_line_step(x,y);
+    return c.TCOD_line_step(x, y);
 }
 
 pub fn mapNew(width: i32, height: i32) TcodMap {
@@ -153,13 +151,13 @@ pub fn pathIsEmpty(path: TcodPath) bool {
 }
 
 pub fn pathWalk(path: TcodPath, x: *i32, y: *i32) bool {
-    return c.TCOD_path_walk(path,x,y,true);
+    return c.TCOD_path_walk(path, x, y, true);
 }
 
 pub fn consolePrint(console: TcodConsole, x: i32, y: i32, fmt: []u8) void {
     var xi: i32 = 0;
     for (fmt) |ch| {
-        consolePutCharEx(console, x+xi, y, ch, TcodColorRGB{.r=255,.g=255,.b=255}, TcodColorRGB{.r=0,.g=0,.b=0});
+        consolePutCharEx(console, x + xi, y, ch, TcodColorRGB{ .r = 255, .g = 255, .b = 255 }, TcodColorRGB{ .r = 0, .g = 0, .b = 0 });
         xi += 1;
     }
 }

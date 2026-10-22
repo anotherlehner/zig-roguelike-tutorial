@@ -1,18 +1,10 @@
 //! zig-roguelike, by Martin Lehner (@anotherlehner)
 
 const std = @import("std");
-const config = @import("config");
 const models = @import("models.zig");
 const expect = std.testing.expect;
 
-const c = @cImport({
-    if (config.use_sdl3) {
-        @cInclude("SDL3/SDL.h");
-    } else {
-        @cInclude("SDL2/SDL.h");
-    }
-    @cInclude("libtcod.h");
-});
+const c = @import("c");
 
 pub const TCOD_COMPILED_VERSION = c.TCOD_COMPILEDVERSION;
 pub const TcodContextParams = c.TCOD_ContextParams;
@@ -41,8 +33,7 @@ pub fn initContextParams(screen_width: i32, screen_height: i32) TcodContextParam
         .pixel_width = 800,
         .pixel_height = 600,
         // .console = c.TCOD_console_new(40, 25), -- TODO: not present in older version of tcod
-        .tileset = c.TCOD_tileset_load("../dejavu10x10_gs_tc.png", 32, 8,
-            256, &c.TCOD_CHARMAP_TCOD)
+        .tileset = c.TCOD_tileset_load("../dejavu10x10_gs_tc.png", 32, 8, 256, &c.TCOD_CHARMAP_TCOD),
     };
 }
 
@@ -78,7 +69,7 @@ pub fn consoleClear(con: TcodConsole) void {
 }
 
 pub fn consoleBlit(con: TcodConsole, width: i32, height: i32) void {
-    c.TCOD_console_blit(con,0,0,width,height,null,0,0,1.0,1.0);
+    c.TCOD_console_blit(con, 0, 0, width, height, null, 0, 0, 1.0, 1.0);
 }
 
 pub fn consolePresent(con: TcodConsole, context: TcodContext) void {
