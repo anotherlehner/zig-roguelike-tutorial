@@ -46,19 +46,3 @@ test "messagelog.addMessage" {
     ml.addMessage(msg, color.White_rgb, true);
     try expect(std.mem.eql(u8, ml.messages.items[0].text, msg));
 }
-
-// test "messagelog.addMessage should stack when last message is the same" {
-//     var ml = MessageLog.init(std.testing.allocator);
-//     var msg1 = std.fmt.allocPrint(std.testing.allocator, "message", .{}) catch @panic("eom");
-//     var msg2 = std.fmt.allocPrint(std.testing.allocator, "message", .{}) catch @panic("eom");
-//     var msg3 = std.fmt.allocPrint(std.testing.allocator, "message", .{}) catch @panic("eom");
-//     ml.addMessage(msg1, color.White_rgb, true);
-//     ml.addMessage(msg2, color.White_rgb, true);
-//     ml.addMessage(msg3, color.White_rgb, true);
-//     try expect(ml.messages.items.len == 1);
-//     try expect(std.mem.eql(u8, ml.messages.items[0].text, msg1));
-//     // std.testing.allocator.free(msg1);
-//     std.testing.allocator.free(msg2);
-//     std.testing.allocator.free(msg3);
-//     ml.deinit();
-// }

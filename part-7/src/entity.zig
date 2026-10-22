@@ -115,3 +115,54 @@ pub fn player(x: i32, y: i32, allocator: Allocator) !*Entity {
     e.renderOrder = RenderOrder.actor;
     return e;
 }
+
+test "entity move updates coordinates" {
+    var e = Entity{ .x = 4, .y = 7 };
+
+    e.move(-2, 3);
+
+    try std.testing.expectEqual(@as(i32, 2), e.x);
+    try std.testing.expectEqual(@as(i32, 10), e.y);
+}
+
+test "fighter clamps hit points and reports alive state" {
+    var fighter = ComponentFighter{ .maxHp = 10, .hp = 5, .defense = 1, .power = 2 };
+
+    fighter.setHp(15);
+    try std.testing.expectEqual(@as(i32, 10), fighter.hp);
+    try std.testing.expect(fighter.isAlive());
+
+    fighter.setHp(-3);
+    try std.testing.expectEqual(@as(i32, 0), fighter.hp);
+    try std.testing.expect(!fighter.isAlive());
+}
+
+test "entity factories initialize player and monster components" {
+    const allocator = std.testing.allocator;
+    const p = try player(2, 3, allocator);
+    defer allocator.destroy(p);
+    const o = try orc(4, 5, allocator);
+    defer allocator.destroy(o);
+    const t = try troll(6, 7, allocator);
+    defer allocator.destroy(t);
+
+    try std.testing.expectEqual(@as(i32, 2), p.x);
+    try std.testing.expectEqual(@as(i32, 3), p.y);
+    try std.testing.expect(p.isPlayer);
+    try std.testing.expect(p.blocksMovement);
+    try std.testing.expectEqual(@as(i32, 30), p.component.fighter.maxHp);
+    try std.testing.expectEqual(@as(u8, 'o'), o.glyph);
+    try std.testing.expectEqual(@as(i32, 10), o.component.fighter.maxHp);
+    try std.testing.expect(o.ai != null);
+    try std.testing.expectEqual(@as(u8, 'T'), t.glyph);
+    try std.testing.expectEqual(@as(i32, 16), t.component.fighter.maxHp);
+    try std.testing.expect(t.blocksMovement);
+}
+
+test "render order comparator sorts corpses before actors" {
+    var corpse = Entity{ .renderOrder = .corpse };
+    var actor = Entity{ .renderOrder = .actor };
+
+    try std.testing.expect(renderOrderComparator({}, &corpse, &actor));
+    try std.testing.expect(!renderOrderComparator({}, &actor, &corpse));
+}

@@ -12,6 +12,7 @@ test {
     // import tests from all modules
     _ = @import("tcod.zig");
     _ = @import("engine.zig");
+    _ = @import("entity.zig");
     _ = @import("procgen.zig");
     _ = @import("map.zig");
     _ = @import("color.zig");
@@ -22,7 +23,7 @@ pub fn main() anyerror!void {
     var contextOwner = try tcod.init();
     defer tcod.quit();
     defer contextOwner.deinit();
-    const console = tcod.consoleNew(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT);
+    const console = createConsole();
     defer tcod.consoleDelete(console);
     tcod.setFps(20);
 
@@ -44,4 +45,16 @@ pub fn main() anyerror!void {
 
     // Run the game
     try eng.run();
+}
+
+fn createConsole() tcod.TcodConsole {
+    return tcod.consoleNew(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT);
+}
+
+test "startup console uses configured screen dimensions" {
+    const console = createConsole();
+    defer tcod.consoleDelete(console);
+
+    try expect(console.w == constants.SCREEN_WIDTH);
+    try expect(console.h == constants.SCREEN_HEIGHT);
 }

@@ -19,6 +19,10 @@ declarations. Dynamic collections use unmanaged `std.ArrayList` values,
 initialized with `.empty` and passed an allocator for operations that may
 allocate.
 
+Run `zig build test` from this directory to exercise the game logic, entity
+behavior, startup console dimensions, and libtcod interop wrappers. These tests
+do not open a window, so they can run in headless environments.
+
 ## Rendering context and magnification
 
 Part 7 creates a `TCOD_Context` with a 10x10 tileset and presents its console

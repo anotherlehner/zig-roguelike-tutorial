@@ -174,6 +174,83 @@ test "initKeyWithVk should set given key on returned structure" {
     try expect(key.vk == KeyUp);
 }
 
+test "empty input structures initialize neutral coordinates and key values" {
+    const key = initEmptyKey();
+    const mouse = initEmptyMouse();
+
+    try expect(key.vk == KeyNone);
+    try expect(key.c == 0);
+    try expect(mouse.cx == -1);
+    try expect(mouse.cy == -1);
+}
+
+test "console character writes and clear use libtcod console" {
+    const console = consoleNew(2, 2);
+    defer consoleDelete(console);
+
+    const foreground = TcodColorRGB{ .r = 10, .g = 20, .b = 30 };
+    const background = TcodColorRGB{ .r = 40, .g = 50, .b = 60 };
+    consolePutCharEx(console, 1, 1, 'x', foreground, background);
+
+    const tile_index: usize = 3;
+    try expect(console.tiles[tile_index].ch == 'x');
+    try expect(console.tiles[tile_index].fg.r == foreground.r);
+    try expect(console.tiles[tile_index].bg.b == background.b);
+
+    consoleClear(console);
+    try expect(console.tiles[tile_index].ch == ' ');
+}
+
+test "map interop sets walkability and computes field of view" {
+    const m = mapNew(3, 3);
+    defer c.TCOD_map_delete(m);
+
+    mapSetProperties(m, 1, 1, true, true);
+    computeFov(m, 1, 1);
+
+    try expect(mapIsWalkable(m, 1, 1));
+    try expect(mapIsInFov(m, 1, 1));
+    try expect(!mapIsWalkable(m, 0, 0));
+
+    mapClear(m, false, false);
+    try expect(!mapIsWalkable(m, 1, 1));
+}
+
+test "line interop steps through a diagonal" {
+    lineInit(0, 0, 2, 2);
+
+    var x: i32 = undefined;
+    var y: i32 = undefined;
+    _ = lineStep(&x, &y);
+    try expect(x == 1 and y == 1);
+    try expect(!lineStep(&x, &y));
+    try expect(x == 2 and y == 2);
+    try expect(lineStep(&x, &y));
+}
+
+test "path interop computes and walks a route on an open map" {
+    const m = mapNew(4, 4);
+    defer c.TCOD_map_delete(m);
+    for (0..4) |y| {
+        for (0..4) |x| {
+            mapSetProperties(m, @intCast(x), @intCast(y), true, true);
+        }
+    }
+
+    const path = pathNewUsingMap(m);
+    defer pathDelete(path);
+
+    try expect(pathCompute(path, 0, 0, 3, 3));
+    try expect(!pathIsEmpty(path));
+    try expect(pathSize(path) > 0);
+
+    var x: i32 = undefined;
+    var y: i32 = undefined;
+    pathGet(path, pathSize(path) - 1, &x, &y);
+    try expect(x == 3 and y == 3);
+    try expect(pathWalk(path, &x, &y));
+}
+
 pub fn setFps(fpsValue: c_int) void {
     c.TCOD_sys_set_fps(fpsValue);
 }
