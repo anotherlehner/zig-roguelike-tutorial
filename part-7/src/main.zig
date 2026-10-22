@@ -19,12 +19,12 @@ test {
 }
 
 pub fn main() anyerror!void {
-    // Create the libtcod console
-    const console = tcod.init();
+    var contextOwner = try tcod.init();
+    defer tcod.quit();
+    defer contextOwner.deinit();
+    const console = tcod.consoleNew(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT);
+    defer tcod.consoleDelete(console);
     tcod.setFps(20);
-    defer {
-        tcod.quit();
-    }
 
     // Initialize the memory allocator for the whole program
     var gpa = std.heap.SafeAllocator.init(std.heap.page_allocator, .{});
@@ -39,9 +39,9 @@ pub fn main() anyerror!void {
     defer {
         map.deinit(allocator);
     }
-    var eng = engine.Engine.init(player, console, &map, allocator);
+    var eng = engine.Engine.init(player, contextOwner.context, console, &map, allocator);
     defer eng.deinit();
 
     // Run the game
-    eng.run();
+    try eng.run();
 }

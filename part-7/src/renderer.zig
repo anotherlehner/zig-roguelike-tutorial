@@ -9,14 +9,13 @@ const messagelog = @import("messagelog.zig");
 const Allocator = std.mem.Allocator;
 const MessageLog = messagelog.MessageLog;
 
-pub fn render(console: tcod.TcodConsole, m: *map.Map, player: *ent.Entity, log: *MessageLog, mx: i32, my: i32) void {
+pub fn render(context: tcod.TcodContext, console: tcod.TcodConsole, m: *map.Map, player: *ent.Entity, log: *MessageLog, mx: i32, my: i32) !void {
     tcod.consoleClear(console);
     renderMap(console, m);
     renderBar(console, player.component.fighter.hp, player.component.fighter.maxHp, 20, m.allocator);
     renderMessages(console, 21, 45, 40, 4, log);
     renderExamine(console, m, mx, my);
-    tcod.consoleBlit(console, m.width, m.height);
-    tcod.consoleFlush();
+    try tcod.contextPresent(context, console);
 }
 
 fn renderExamine(console: tcod.TcodConsole, m: *map.Map, mx: i32, my: i32) void {

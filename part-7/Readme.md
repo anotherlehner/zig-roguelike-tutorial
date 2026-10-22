@@ -18,3 +18,11 @@ which is checked on exit. Procedural generation uses
 declarations. Dynamic collections use unmanaged `std.ArrayList` values,
 initialized with `.empty` and passed an allocator for operations that may
 allocate.
+
+## Rendering context and magnification
+
+Part 7 creates a `TCOD_Context` with a 10x10 tileset and presents its console
+through `TCOD_context_present`. `constants.zig` configures
+`WINDOW_MAGNIFICATION`; `tcod.zig` uses it to size the context window in pixels
+while keeping the game console at 80x50 cells. The context and tileset are
+released before `TCOD_quit`.
