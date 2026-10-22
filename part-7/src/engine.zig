@@ -17,6 +17,7 @@ const Map = map.Map;
 
 pub const Engine = struct {
     player: *Entity,
+    context: tcod.TcodContext,
     console: tcod.TcodConsole,
     map: *Map,
     log: MessageLog,
@@ -48,10 +49,12 @@ pub const Engine = struct {
                     // no enemy turns with a dead player
                 }
             }
-        } else {
-            if (self.map.isInFov(mouse.cx, mouse.cy)) {
-                self.mx = mouse.cx;
-                self.my = mouse.cy;
+        } else if (event == tcod.TcodEventMouseMove or event == tcod.TcodEventMousePress or event == tcod.TcodEventMouseRelease) {
+            var mouseX = mouse.x;
+            var mouseY = mouse.y;
+            if (tcod.contextScreenPixelToTile(self.context, &mouseX, &mouseY) and self.map.inBounds(mouseX, mouseY) and self.map.isInFov(mouseX, mouseY)) {
+                self.mx = mouseX;
+                self.my = mouseY;
             }
         }
 
@@ -68,10 +71,11 @@ pub const Engine = struct {
         }
     }
 
-    pub fn init(player: *Entity, console: tcod.TcodConsole, m: *Map, allocator: Allocator) Engine {
+    pub fn init(player: *Entity, context: tcod.TcodContext, console: tcod.TcodConsole, m: *Map, allocator: Allocator) Engine {
         const log = MessageLog.init(allocator);
         return Engine{
             .player = player,
+            .context = context,
             .console = console,
             .map = m,
             .log = log,
@@ -87,9 +91,9 @@ pub const Engine = struct {
         self.isQuit = true;
     }
 
-    pub fn run(self: *Engine) void {
+    pub fn run(self: *Engine) !void {
         while (!tcod.consoleIsWindowClosed() and !self.isQuit) {
-            renderer.render(self.console, self.map, self.player, &self.log, self.mx, self.my);
+            try renderer.render(self.context, self.console, self.map, self.player, &self.log, self.mx, self.my);
             self.handleEvents();
         }
         std.debug.print("QUIT!?", .{});

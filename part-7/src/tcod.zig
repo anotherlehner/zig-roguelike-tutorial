@@ -17,12 +17,14 @@ pub const TcodEvent = c.TCOD_event_t;
 pub const TcodMap = c.TCOD_map_t;
 pub const TcodPath = c.TCOD_path_t;
 pub const TcodCallback = c.TCOD_path_func_t;
-pub const TcodTileset = c.TCOD_Tileset;
-pub const TcodContext = c.TCOD_Context;
+pub const TcodTileset = [*c]c.TCOD_Tileset;
+pub const TcodContext = [*c]c.TCOD_Context;
 pub const TcodContextParams = c.TCOD_ContextParams;
-pub const TcodError = c.TCOD_Error;
 
 pub const TcodEventKeyPress = c.TCOD_EVENT_KEY_PRESS;
+pub const TcodEventMouseMove = c.TCOD_EVENT_MOUSE_MOVE;
+pub const TcodEventMousePress = c.TCOD_EVENT_MOUSE_PRESS;
+pub const TcodEventMouseRelease = c.TCOD_EVENT_MOUSE_RELEASE;
 
 pub const KeyEscape = c.TCODK_ESCAPE;
 pub const KeyUp = c.TCODK_UP;
@@ -32,23 +34,48 @@ pub const KeyRight = c.TCODK_RIGHT;
 pub const KeyNone = c.TCODK_NONE;
 pub const KeyJ = c.TCODK_J;
 
-pub fn init() TcodConsole {
-    consoleInitRoot(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT, constants.TITLE, false);
-    // consoleSetCustomFont(constants.TILESET);
-    return consoleNew(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT);
-}
+pub const ContextOwner = struct {
+    context: TcodContext,
+    tileset: TcodTileset,
 
-pub fn initNewstyle() TcodContext {
-    const params = TcodContextParams{ .tcod_version = c.TCOD_COMPILEDVERSION, .columns = constants.SCREEN_WIDTH, .rows = constants.SCREEN_HEIGHT, .tileset = initTileset(constants.TILESET), .renderer_type = c.TCOD_RENDERER_SDL2, .window_title = constants.TITLE, .vsync = true, .sdl_window_flags = null, .console = consoleInitRoot(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT, "", false) };
+    pub fn deinit(self: *ContextOwner) void {
+        c.TCOD_context_delete(self.context);
+        c.TCOD_tileset_delete(self.tileset);
+    }
+};
 
-    const context = TcodContext{};
+pub fn init() !ContextOwner {
+    if (constants.WINDOW_MAGNIFICATION <= 0) return error.InvalidWindowMagnification;
 
-    const tcodErr = c.TCOD_context_new(&params, &context);
-    if (tcodErr != 0) {
-        @panic("Error creating context");
+    const tileset = c.TCOD_tileset_load(constants.TILESET, 32, 8, 256, &c.TCOD_CHARMAP_TCOD);
+    if (tileset == null) {
+        std.log.err("Failed to load tileset: {s}", .{std.mem.span(c.TCOD_get_error())});
+        return error.TilesetLoadFailed;
     }
 
-    return context;
+    var params: TcodContextParams = std.mem.zeroes(TcodContextParams);
+    params.tcod_version = c.TCOD_COMPILEDVERSION;
+    const magnification: f64 = constants.WINDOW_MAGNIFICATION;
+    const tile_width = tileset[0].tile_width;
+    const tile_height = tileset[0].tile_height;
+    params.pixel_width = @intFromFloat(@as(f64, @floatFromInt(constants.SCREEN_WIDTH * tile_width)) * magnification);
+    params.pixel_height = @intFromFloat(@as(f64, @floatFromInt(constants.SCREEN_HEIGHT * tile_height)) * magnification);
+    params.columns = constants.SCREEN_WIDTH;
+    params.rows = constants.SCREEN_HEIGHT;
+    params.renderer_type = c.TCOD_RENDERER_SDL2;
+    params.tileset = tileset;
+    params.vsync = 1;
+    params.window_title = constants.TITLE;
+
+    var context: TcodContext = null;
+    const tcodErr = c.TCOD_context_new(&params, &context);
+    if (tcodErr < 0 or context == null) {
+        std.log.err("Failed to create libtcod context: {s}", .{std.mem.span(c.TCOD_get_error())});
+        c.TCOD_tileset_delete(tileset);
+        return error.ContextCreationFailed;
+    }
+
+    return .{ .context = context, .tileset = tileset };
 }
 
 pub fn initKeyWithVk(initialVk: c_uint) TcodKey {
@@ -65,28 +92,37 @@ pub fn initEmptyKey() TcodKey {
     return TcodKey{ .vk = KeyNone, .c = 0, .text = undefined, .pressed = undefined, .lalt = undefined, .lctrl = undefined, .lmeta = undefined, .ralt = undefined, .rctrl = undefined, .rmeta = undefined, .shift = undefined };
 }
 
-pub fn consoleInitRoot(width: i32, height: i32, title: [*]const u8, fullscreen: bool) void {
-    _ = c.TCOD_console_init_root(width, height, title, fullscreen, c.TCOD_RENDERER_SDL2);
-}
-
 pub fn quit() void {
     c.TCOD_quit();
-}
-
-pub fn initTileset(filepath: [*]const u8) TcodTileset {
-    return c.TCOD_tileset_load(filepath, 10, 10, 256, c.TCOD_CHARMAP_CP437);
-}
-
-pub fn consoleSetCustomFont(filepath: [*]const u8) void {
-    _ = c.TCOD_console_set_custom_font(filepath, c.TCOD_FONT_TYPE_GREYSCALE | c.TCOD_FONT_LAYOUT_TCOD, 0, 0);
 }
 
 pub fn consoleNew(width: i32, height: i32) TcodConsole {
     return c.TCOD_console_new(width, height);
 }
 
+pub fn consoleDelete(console: TcodConsole) void {
+    c.TCOD_console_delete(console);
+}
+
 pub fn consoleIsWindowClosed() bool {
     return c.TCOD_console_is_window_closed();
+}
+
+pub fn contextPresent(context: TcodContext, console: TcodConsole) !void {
+    const tcodErr = c.TCOD_context_present(context, console, null);
+    if (tcodErr < 0) {
+        std.log.err("Failed to present console: {s}", .{std.mem.span(c.TCOD_get_error())});
+        return error.ConsolePresentationFailed;
+    }
+}
+
+pub fn contextScreenPixelToTile(context: TcodContext, x: *i32, y: *i32) bool {
+    const tcodErr = c.TCOD_context_screen_pixel_to_tile_i(context, x, y);
+    if (tcodErr < 0) {
+        std.log.err("Failed to convert mouse position to console coordinates: {s}", .{std.mem.span(c.TCOD_get_error())});
+        return false;
+    }
+    return true;
 }
 
 pub fn consolePutCharEx(con: TcodConsole, x: i32, y: i32, character: u8, fore: TcodColorRGB, back: TcodColorRGB) void {
@@ -97,16 +133,8 @@ pub fn consoleClear(con: TcodConsole) void {
     c.TCOD_console_clear(con);
 }
 
-pub fn consoleBlit(con: TcodConsole, width: i32, height: i32) void {
-    c.TCOD_console_blit(con, 0, 0, width, height, null, 0, 0, 1.0, 1.0);
-}
-
 pub fn sysCheckForEvent(key: *TcodKey, mouse: *TcodMouse) TcodEvent {
     return c.TCOD_sys_check_for_event(c.TCOD_EVENT_ANY, key, mouse);
-}
-
-pub fn consoleFlush() void {
-    _ = c.TCOD_console_flush();
 }
 
 pub fn lineInit(xFrom: i32, yFrom: i32, xTo: i32, yTo: i32) void {
