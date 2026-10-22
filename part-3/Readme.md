@@ -6,7 +6,10 @@ Encountered a lot of challenges doing this part...
 
 ## Random
 
-In Zig, to create random integers we use `std.Random.DefaultPrng`, the default pseudorandom number generator. You create a generator and access its random functions through the returned interface:
+In Zig, to create random integers we use `std.Random.DefaultPrng`, the default
+pseudorandom number generator. The build translates `src/c.h` into the shared
+`c` module; here, `time(null)` from that module supplies the seed. You create a
+generator and access its random functions through the returned interface:
 
 ```zig
 // import
@@ -22,15 +25,12 @@ const roomWidth = rnd.random().intRangeAtMost(i32, room_min_size, room_max_size)
 
 The part where I do `rnd.random().intRangeAtMost...` is the weird part for me. Usually the interface is something you pass around and call to get into the implementation underneath. This seems like it's reversed? I'd like to work on understanding this more and then try to setup something similar in my own structs.
 
-## Zig 0.17 upgrade
-
-The source now imports the translated C module with `@import("c")`; `build.zig` creates it from `src/c.h` using `addTranslateC`. The header includes libtcod, SDL2 on non-macOS platforms, and SDL3 on macOS, matching the libraries linked by the build.
-
-Zig 0.17 no longer provides `std.time.Instant`, so dungeon generation and tunnel selection seed `DefaultPrng` directly from the C `time(null)` function declared by `<time.h>` in `src/c.h`. The `ArrayList` code uses the current unmanaged-list API: initialize with `.empty` and pass the allocator to operations such as `append`, `deinit`, and `toOwnedSlice`.
-
 ## ArrayList
 
-I think this part is the first where I used an `ArrayList`. I used this structure in this part for making lists (slices) of coordinates to pass around and iterate over.
+I think this part is the first where I used an unmanaged `std.ArrayList`. I used
+this structure in this part for making lists (slices) of coordinates to pass
+around and iterate over. Initialize it with `.empty` and pass the allocator to
+operations that may allocate, such as `append`, `deinit`, and `toOwnedSlice`.
 
 Here's one example:
 
@@ -98,7 +98,7 @@ Update: I actually found this interesting:
 var x: i32 = undefined;
 var y: i32 = undefined;
 tcod.lineInit(1, 1, 1, 1); // start: 1,1 and end: 1,1 (0 length line)
-var firstStep = tcod.lineStep(&x, &y);
+const firstStep = tcod.lineStep(&x, &y);
 ```
 
 I would think firstStep should return `false` here because the line is 0 cells long and shouldn't set anything in x and y. Indeed nothing it set in x or y and they just have garbage in them. Unfortunately `lineStep` here returned `true` and my loop, which followed these lines, just kept going -- and blew up. Really seems like that should return false, but maybe that's one reason why it's deprecated? I should try the other functions available for drawing lines.

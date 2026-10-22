@@ -335,22 +335,22 @@ pub const Map = struct {
         if (!self.inBounds(x,y)) {
             @panic("went outside of map");
         }
-        return &self.tiles[@intCast(usize, (self.width*x)+y)];
+        return &self.tiles[@intCast((self.width*x)+y)];
     }
 
     pub fn isWalkable(self: *Map, x: i32, y: i32) bool {
         if (!self.inBounds(x,y)) return false;
-        var loc = (self.width * y) + x;
+        const loc = (self.width * y) + x;
         if (loc > self.width * self.height) {
             std.log.info("outside map bounds, x: {d}, y: {d}, loc: {d}, mapsize: {d}", .{x,y, loc,(self.width*self.height)});
             @panic("went outside of map");
         }
-        return self.tiles[@intCast(usize, loc)].walkable;
+        return self.tiles[@intCast(loc)].walkable;
     }
 
     pub fn init(width: i32, height: i32, allocator: Allocator) !Map {
         const size = width * height;
-        var tiles = try allocator.alloc(Tile, @intCast(size));
+        const tiles = try allocator.alloc(Tile, @intCast(size));
         var m = Map{.width=width, .height=height, .allocator=allocator, .tiles=tiles};
         m.fill(FLOOR);
         return m;
@@ -383,7 +383,9 @@ Some other commennts:
 
 That's the map so far! phew... I did write a few tests, you can see them in the source.
 
-I updated `main.zig` to create a new map using Zig's general purpose memory allocator and give a reference to it to the engine:
+I updated `main.zig` to create a new map using `std.heap.SafeAllocator`,
+backed by `std.heap.page_allocator`, and give a reference to it to the engine.
+Its `deinit` result is a leak count, which the program checks before exiting:
 
 ```zig
 var gpa = std.heap.SafeAllocator.init(std.heap.page_allocator, .{});
@@ -400,12 +402,6 @@ defer {
 
 var eng = engine.Engine.init(&entities, &player, console, &map);
 ```
-
-## Zig 0.17 upgrade
-
-The examples above describe the original implementation; the current source uses Zig 0.17 APIs. `build.zig` translates `src/c.h` with `addTranslateC` and imports the resulting module as `c`. The header includes libtcod and the platform's SDL header (SDL3 on macOS, SDL2 elsewhere), and `tcod.zig` uses `@import("c")` instead of the removed `@cImport` builtin. The build configures the C library and SDL links for both the executable and test targets.
-
-The map allocation in `main.zig` now uses `std.heap.SafeAllocator`, since `GeneralPurposeAllocator` is no longer available in Zig 0.17. Its `deinit` returns a leak count, which the program checks on exit. The rest of the map's allocator-owned arrays continue to be explicitly freed as before.
 
 ## Engine updates
 
