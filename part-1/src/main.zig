@@ -1,17 +1,8 @@
 //! zig-roguelike, by Martin Lehner (@anotherlehner)
 const std = @import("std");
-const config = @import("config");
 const expect = std.testing.expect;
 
-// translate and import the libtcod C and libSDL3 library headers
-const c = @cImport({
-    if (config.use_sdl3) {
-        @cInclude("SDL3/SDL.h");
-    } else {
-        @cInclude("SDL2/SDL.h");
-    }
-    @cInclude("libtcod.h");
-});
+const c = @import("c");
 
 // using small values now because the resulting window is large and easy to see
 const SCREEN_WIDTH = 40;

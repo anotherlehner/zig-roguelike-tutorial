@@ -7,10 +7,8 @@ By Martin Lehner ([@anotherlehner](https://github.com/anotherlehner))
 We start a libtcod project by opening a simple window with nothing in it. Using the C API this looks like the following:
 
 ```zig
-// import the libtcod C headers -- these are automatically translated for use by Zig!
-const c = @cImport({
-    @cInclude("libtcod.h");
-});
+// import the libtcod C declarations translated by build.zig
+const c = @import("c");
 
 // using small values now because the resulting window is large and easy to see
 const SCREEN_WIDTH = 40;
@@ -44,7 +42,7 @@ pub fn main() anyerror!void {
 
 [Screenshot of initial window](images/empty_window.png)
 
-Zig makes calling into C really easy. All we need to do is use the `@cImport` built-in function to include the `libtcod.h` header file in the source. The libtcod library binary itself is configured the same way we already covered in part 0.
+Zig makes calling into C really easy. The build script translates the `src/c.h` header, which includes `libtcod.h`, and makes those declarations available through `@import("c")`. The libtcod library binary itself is configured the same way we already covered in part 0.
 
 Note here that lines with `_ = ...` are explicitly ignore return results. These function calls return potential errors or data that I don't need or don't want to handle at the moment.
 
@@ -53,9 +51,7 @@ Note here that lines with `_ = ...` are explicitly ignore return results. These 
 To draw something on the window we've created we need to just add a few function calls. We're going to use a custom font by specifying a png containing the collection of glyphs we want to use and then draw a single `@` symbol on the screen.
 
 ```zig
-const c = @cImport({
-    @cInclude("libtcod.h");
-});
+const c = @import("c");
 
 const SCREEN_WIDTH = 40;
 const SCREEN_HEIGHT = 25;

@@ -1,9 +1,7 @@
 //! zig-roguelike, by Martin Lehner (@anotherlehner)
 const std = @import("std");
 
-const c = @cImport({
-    @cInclude("libtcod.h");
-});
+const c = @import("c");
 
 pub fn main() anyerror!void {
     // Note that info level log messages are by default printed only in Debug
