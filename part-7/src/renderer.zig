@@ -25,7 +25,14 @@ fn renderExamine(console: tcod.TcodConsole, m: *map.Map, mx: i32, my: i32) void 
     m.allocator.free(exText);
 }
 
-fn renderMessages(console: tcod.TcodConsole, x: i32, y: i32, width: i32, height: i32, log: *messagelog.MessageLog) void {
+fn renderMessages(
+    console: tcod.TcodConsole,
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+    log: *messagelog.MessageLog,
+) void {
     var y_offset: i32 = y;
     const len = log.messages.items.len;
     if (len == 0) {
@@ -48,17 +55,50 @@ fn renderMessages(console: tcod.TcodConsole, x: i32, y: i32, width: i32, height:
     }
 }
 
-fn renderBar(console: tcod.TcodConsole, curValue: i32, maxValue: i32, totWidth: i32, allocator: Allocator) void {
-    const barWidth = @divFloor(curValue, maxValue) * totWidth;
+fn renderBar(
+    console: tcod.TcodConsole,
+    curValue: i32,
+    maxValue: i32,
+    totWidth: i32,
+    allocator: Allocator,
+) void {
+    const curValueF = @as(f32, @floatFromInt(curValue));
+    const maxValueF = @as(f32, @floatFromInt(maxValue));
+    const totWidthF = @as(f32, @floatFromInt(totWidth));
+    const barWidth: i32 = @intFromFloat(@floor((curValueF / maxValueF) * totWidthF));
 
-    tcod.consoleDrawRectRgb(console, 0, 45, totWidth, 1, 1, color.Bar_empty, color.Bar_empty);
+    tcod.consoleDrawRectRgb(
+        console,
+        0,
+        45,
+        totWidth,
+        1,
+        1,
+        color.Bar_empty,
+        color.Bar_empty,
+    );
 
     if (barWidth > 0) {
-        tcod.consoleDrawRectRgb(console, 0, 45, barWidth, 1, 1, color.Bar_filled, color.Bar_filled);
+        tcod.consoleDrawRectRgb(
+            console,
+            0,
+            45,
+            barWidth,
+            1,
+            1,
+            color.Bar_filled,
+            color.Bar_filled,
+        );
     }
 
-    const msg = std.fmt.allocPrint(allocator, "hp: {d}/{d}", .{ curValue, maxValue }) catch @panic("eom");
+    const msg = std.fmt.allocPrint(
+        allocator,
+        "hp: {d}/{d}",
+        .{ curValue, maxValue },
+    ) catch @panic("eom");
+
     tcod.consolePrintFg(console, 1, 45, msg, color.White_rgb);
+
     allocator.free(msg);
 }
 

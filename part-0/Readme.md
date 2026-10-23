@@ -90,7 +90,7 @@ translated declarations available to the executable and test modules.
 To make sure things were working right I also grabbed a constant from inside the libtcod C header and tried printing it out in the Zig log statement:
 
 ```zig
-std.log.info("tcod red: {}", .{c.TCOD_red});
+std.log.info("tcod green: {}", .{c.TCOD_green});
 ```
 
 `{}` means print the value as a string.
@@ -102,7 +102,7 @@ To build and run the project Zig provides several commands but for now let's sta
 We get the following output:
 
 ```
-info: tcod red: .{ .r = 255, .g = 0, .b = 0 }
+info: tcod green: .{ .r = 0, .g = 255, .b = 0 }
 ```
 
 Hello libtcod world?

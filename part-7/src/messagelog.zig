@@ -22,12 +22,24 @@ pub const MessageLog = struct {
         return MessageLog{ .allocator = allocator, .messages = ms };
     }
 
-    pub fn addMessage(self: *MessageLog, text: []u8, fg: tcod.TcodColorRGB, stack: bool) void {
-        if (stack and self.messages.items.len > 0 and std.mem.eql(u8, self.messages.items[self.messages.items.len - 1].text, text)) {
+    pub fn addMessage(
+        self: *MessageLog,
+        text: []u8,
+        fg: tcod.TcodColorRGB,
+        stack: bool,
+    ) void {
+        if (stack and self.messages.items.len > 0 and std.mem.eql(
+            u8,
+            self.messages.items[self.messages.items.len - 1].text,
+            text,
+        )) {
             self.messages.items[self.messages.items.len - 1].count += 1;
             self.allocator.free(text);
         } else {
-            self.messages.append(self.allocator, Message{ .text = text, .fg = fg }) catch @panic("oom");
+            self.messages.append(
+                self.allocator,
+                Message{ .text = text, .fg = fg },
+            ) catch @panic("oom");
         }
     }
 
