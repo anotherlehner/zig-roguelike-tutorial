@@ -93,7 +93,15 @@ pub const Engine = struct {
 
     pub fn run(self: *Engine) !void {
         while (!tcod.consoleIsWindowClosed() and !self.isQuit) {
-            try renderer.render(self.context, self.console, self.map, self.player, &self.log, self.mx, self.my);
+            try renderer.render(
+                self.context,
+                self.console,
+                self.map,
+                self.player,
+                &self.log,
+                self.mx,
+                self.my,
+            );
             self.handleEvents();
         }
         std.debug.print("QUIT!?", .{});

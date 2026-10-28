@@ -99,6 +99,8 @@ fn renderMessages(
 
 This function will take a message log, among other things, and show it on the screen.
 
+I don't have a `textwrap.wrap` function available the way the tutorial does. Due to this I crafted my messages to fit in the space I have available. This is something I could improve on in the future and either write my own wrap function given a maximum width or some other approach. One might think it would be naively simple to make a wrap function given a max width, however, that's only the case if we don't have annotated strings. If we start using color codes and other annotations within the message strings we'll also need to make sure we handle those appropriately (eg: if we wanted to use a different color for numbers within a message line than the rest of the message).
+
 
 
 ## C interop

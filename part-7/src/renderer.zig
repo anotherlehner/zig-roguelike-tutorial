@@ -43,11 +43,29 @@ fn renderMessages(
     while (yi >= 0 and nRendered < height) : (yi -= 1) {
         const msg = &log.messages.items[@intCast(yi)];
         if (msg.count > 1) {
-            const fullMsg = std.fmt.allocPrint(log.allocator, "{s} (x{d})", .{ msg.text, msg.count }) catch @panic("eom");
-            tcod.consolePrintFgMaxLength(console, x, y_offset, fullMsg, msg.fg, width);
+            const fullMsg = std.fmt.allocPrint(
+                log.allocator,
+                "{s} (x{d})",
+                .{ msg.text, msg.count },
+            ) catch @panic("eom");
+            tcod.consolePrintFgMaxLength(
+                console,
+                x,
+                y_offset,
+                fullMsg,
+                msg.fg,
+                width,
+            );
             log.allocator.free(fullMsg);
         } else {
-            tcod.consolePrintFgMaxLength(console, x, y_offset, msg.text, msg.fg, width);
+            tcod.consolePrintFgMaxLength(
+                console,
+                x,
+                y_offset,
+                msg.text,
+                msg.fg,
+                width,
+            );
         }
 
         nRendered += 1;

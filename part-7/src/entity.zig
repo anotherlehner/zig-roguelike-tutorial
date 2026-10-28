@@ -40,7 +40,7 @@ pub const Entity = struct {
 
 pub fn renderOrderComparator(context: void, a: *Entity, b: *Entity) bool {
     _ = context;
-    return @intFromEnum(a.renderOrder) < @intFromEnum(b.renderOrder);
+    return @backingInt(a.renderOrder) < @backingInt(b.renderOrder);
 }
 
 pub const ComponentFighter = struct {
