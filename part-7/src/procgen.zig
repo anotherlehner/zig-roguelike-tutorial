@@ -54,27 +54,41 @@ pub const RectangularRoom = struct {
     }
 };
 
-pub fn placeEntities(room: *RectangularRoom, m: *Map, maxMonsters: i32, allocator: Allocator) !void {
-    var rnd = RndGen.init(@intCast(c_api.time(null)));
+pub fn placeEntities(room: *RectangularRoom, m: *Map, maxMonsters: i32, rnd: *RndGen, allocator: Allocator) !void {
+    if (maxMonsters <= 0) return;
+
+    var positions: ArrayList(Coord) = .empty;
+    defer positions.deinit(allocator);
+
+    var x = room.x1 + 1;
+    while (x < room.x2) : (x += 1) {
+        var y = room.y1 + 1;
+        while (y < room.y2) : (y += 1) {
+            if (m.getBlockingEntity(x, y) == null) {
+                try positions.append(allocator, .{ .x = x, .y = y });
+            }
+        }
+    }
 
     const nMonsters = rnd.random().intRangeAtMost(i32, 0, maxMonsters);
+    const monstersToPlace = @min(@as(usize, @intCast(nMonsters)), positions.items.len);
     var i: usize = 0;
-    while (i < nMonsters) {
-        const x: i32 = rnd.random().intRangeAtMost(i32, room.x1 + 1, room.x2 - 1);
-        const y: i32 = rnd.random().intRangeAtMost(i32, room.y1 + 1, room.y2 - 1);
+    while (i < monstersToPlace) : (i += 1) {
+        const positionIndex = rnd.random().intRangeAtMost(usize, 0, positions.items.len - 1);
+        const position = positions.swapRemove(positionIndex);
         const monsterType = rnd.random().intRangeAtMost(i32, 1, 10);
-        if (monsterType < 8) {
-            try m.addEntity(try ent.orc(x, y, allocator), allocator);
-        } else {
-            try m.addEntity(try ent.troll(x, y, allocator), allocator);
-        }
-        i += 1;
+        const monster = if (monsterType < 8)
+            try ent.orc(position.x, position.y, allocator)
+        else
+            try ent.troll(position.x, position.y, allocator);
+        m.addEntity(monster, allocator) catch |err| {
+            allocator.destroy(monster);
+            return err;
+        };
     }
 }
 
-pub fn tunnelBetween(start: Coord, end: Coord, allocator: Allocator) ![]Coord {
-    var rnd = RndGen.init(@intCast(c_api.time(null)));
-
+pub fn tunnelBetween(start: Coord, end: Coord, rnd: *RndGen, allocator: Allocator) ![]Coord {
     var innerList: ArrayList(Coord) = .empty;
     defer innerList.deinit(allocator);
 
@@ -112,6 +126,7 @@ pub fn line(start: Coord, end: Coord, innerList: *ArrayList(Coord), allocator: A
 
 pub fn generateDungeon(max_rooms: usize, room_min_size: i32, room_max_size: i32, room_max_monsters: i32, width: i32, height: i32, maxHeight: i32, player: *Entity, allocator: Allocator) !Map {
     var m = try Map.init(width, height, allocator);
+    errdefer m.deinit(allocator);
     try m.entities.append(allocator, player);
 
     var rooms = try allocator.alloc(RectangularRoom, max_rooms);
@@ -120,7 +135,12 @@ pub fn generateDungeon(max_rooms: usize, room_min_size: i32, room_max_size: i32,
     var rnd = RndGen.init(@intCast(c_api.time(null)));
 
     var i: usize = 0;
-    while (i < max_rooms) {
+    const max_attempts = if (max_rooms > std.math.maxInt(usize) / 100)
+        std.math.maxInt(usize)
+    else
+        max_rooms * 100;
+    var attempts: usize = 0;
+    while (i < max_rooms and attempts < max_attempts) : (attempts += 1) {
         const roomWidth = rnd.random().intRangeAtMost(i32, room_min_size, room_max_size);
         const roomHeight = rnd.random().intRangeAtMost(i32, room_min_size, room_max_size);
 
@@ -149,25 +169,30 @@ pub fn generateDungeon(max_rooms: usize, room_min_size: i32, room_max_size: i32,
                 player.x = center.x;
                 player.y = center.y;
             } else {
-                const tunnelCoords: []Coord = try tunnelBetween(rooms[i - 1].center(), room.center(), allocator);
+                const tunnelCoords: []Coord = try tunnelBetween(rooms[i - 1].center(), room.center(), &rnd, allocator);
                 defer allocator.free(tunnelCoords);
                 for (tunnelCoords) |c| {
                     m.set(c.x, c.y, map.FLOOR);
                 }
             }
 
-            try placeEntities(&room, &m, room_max_monsters, allocator);
+            try placeEntities(&room, &m, room_max_monsters, &rnd, allocator);
 
             rooms[i] = room;
             i += 1;
         }
     }
 
+    if (i < max_rooms) {
+        std.log.warn("generated {d} of {d} requested rooms after {d} attempts", .{ i, max_rooms, attempts });
+    }
+
     return m;
 }
 
 test "tunnelBetween" {
-    const t = try tunnelBetween(.{ .x = 0, .y = 0 }, .{ .x = 5, .y = 5 }, std.testing.allocator);
+    var rnd = RndGen.init(42);
+    const t = try tunnelBetween(.{ .x = 0, .y = 0 }, .{ .x = 5, .y = 5 }, &rnd, std.testing.allocator);
     defer std.testing.allocator.free(t);
     try expect(t.len == 10);
     try expect(std.meta.eql(t[4], .{ .x = 0, .y = 5 }) or std.meta.eql(t[4], .{ .x = 5, .y = 0 }));
@@ -216,4 +241,38 @@ test "rectangularroom.inner" {
     try expect(std.meta.eql(inner[0], Coord{ .x = 2, .y = 2 }));
     try expect(std.meta.eql(inner[1], Coord{ .x = 2, .y = 3 }));
     try expect(inner.len == 4);
+}
+
+test "placeEntities uses one random stream and avoids occupied tiles" {
+    const allocator = std.testing.allocator;
+    var m = try Map.init(80, 10, allocator);
+    defer m.deinit(allocator);
+
+    const player = try ent.player(3, 3, allocator);
+    try m.addEntity(player, allocator);
+
+    var rnd = RndGen.init(42);
+    var room_index: i32 = 0;
+    while (room_index < 10) : (room_index += 1) {
+        var room = RectangularRoom.init(room_index * 8, 0, 6, 6);
+        try placeEntities(&room, &m, 2, &rnd, allocator);
+    }
+
+    try expect(m.entities.items.len > 1);
+    for (m.entities.items, 0..) |entity, i| {
+        if (entity == player) continue;
+        try expect(!(entity.x == player.x and entity.y == player.y));
+        for (m.entities.items[i + 1 ..]) |other| {
+            try expect(!(entity.x == other.x and entity.y == other.y));
+        }
+    }
+}
+
+test "generateDungeon stops after bounded attempts when rooms cannot fit" {
+    const allocator = std.testing.allocator;
+    const player = try ent.player(0, 0, allocator);
+    var m = try generateDungeon(2, 6, 6, 0, 7, 7, 7, player, allocator);
+    defer m.deinit(allocator);
+
+    try expect(m.entities.items.len == 1);
 }

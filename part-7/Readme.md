@@ -114,11 +114,13 @@ executable and test modules.
 ## Memory and collections
 
 The program uses `std.heap.SafeAllocator`; its `deinit` returns a leak count,
-which is checked on exit. Procedural generation uses
-`std.Random.DefaultPrng`, seeded with `time(null)` from the translated C
-declarations. Dynamic collections use unmanaged `std.ArrayList` values,
-initialized with `.empty` and passed an allocator for operations that may
-allocate.
+which is checked on exit. Procedural generation seeds one
+`std.Random.DefaultPrng` from `time(null)` per dungeon and shares it across
+room, tunnel, and monster generation. Room placement is bounded and logs a
+warning if it cannot place every requested room. Monsters are placed on
+unoccupied room tiles. Dynamic collections use unmanaged `std.ArrayList`
+values, initialized with `.empty` and passed an allocator for operations that
+may allocate.
 
 Run `zig build test` from this directory to exercise the game logic, entity
 behavior, startup console dimensions, and libtcod interop wrappers. These tests
