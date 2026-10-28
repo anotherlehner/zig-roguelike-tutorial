@@ -287,7 +287,7 @@ pub fn pathWalk(path: TcodPath, x: *i32, y: *i32) bool {
     return c.TCOD_path_walk(path, x, y, true);
 }
 
-pub fn consolePrint(console: TcodConsole, x: i32, y: i32, fmt: []u8) void {
+pub fn consolePrint(console: TcodConsole, x: i32, y: i32, fmt: []const u8) void {
     var xi: i32 = 0;
     for (fmt) |ch| {
         consolePutCharEx(console, x + xi, y, ch, TcodColorRGB{ .r = 255, .g = 255, .b = 255 }, TcodColorRGB{ .r = 0, .g = 0, .b = 0 });
@@ -296,7 +296,7 @@ pub fn consolePrint(console: TcodConsole, x: i32, y: i32, fmt: []u8) void {
 }
 
 /// Prints a string setting only the foreground color and leaving the bg alone
-pub fn consolePrintFg(console: TcodConsole, x: i32, y: i32, fmt: []u8, fg: TcodColorRGB) void {
+pub fn consolePrintFg(console: TcodConsole, x: i32, y: i32, fmt: []const u8, fg: TcodColorRGB) void {
     var xi: i32 = 0;
     for (fmt) |ch| {
         c.TCOD_console_set_char(console, x + xi, y, ch);
@@ -305,7 +305,7 @@ pub fn consolePrintFg(console: TcodConsole, x: i32, y: i32, fmt: []u8, fg: TcodC
     }
 }
 
-pub fn consolePrintFgMaxLength(console: TcodConsole, x: i32, y: i32, fmt: []u8, fg: TcodColorRGB, maxLength: i32) void {
+pub fn consolePrintFgMaxLength(console: TcodConsole, x: i32, y: i32, fmt: []const u8, fg: TcodColorRGB, maxLength: i32) void {
     var xi: i32 = 0;
     for (fmt) |ch| {
         if (xi > maxLength) return;

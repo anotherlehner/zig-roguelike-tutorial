@@ -92,6 +92,7 @@ pub const Engine = struct {
     }
 
     pub fn run(self: *Engine) !void {
+        self.log.addMessage("Welcome to Zig Roguelike", color.White_rgb, false);
         while (!tcod.consoleIsWindowClosed() and !self.isQuit) {
             try renderer.render(
                 self.context,

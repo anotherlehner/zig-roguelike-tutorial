@@ -8,7 +8,7 @@ const ArrayList = std.ArrayList;
 const expect = std.testing.expect;
 
 const Message = struct {
-    text: []u8,
+    text: []const u8,
     fg: tcod.TcodColorRGB,
     count: u8 = 1,
 };
@@ -24,7 +24,7 @@ pub const MessageLog = struct {
 
     pub fn addMessage(
         self: *MessageLog,
-        text: []u8,
+        text: []const u8,
         fg: tcod.TcodColorRGB,
         stack: bool,
     ) void {
@@ -34,11 +34,11 @@ pub const MessageLog = struct {
             text,
         )) {
             self.messages.items[self.messages.items.len - 1].count += 1;
-            self.allocator.free(text);
         } else {
+            const owned_text = self.allocator.dupe(u8, text) catch @panic("oom");
             self.messages.append(
                 self.allocator,
-                Message{ .text = text, .fg = fg },
+                Message{ .text = owned_text, .fg = fg },
             ) catch @panic("oom");
         }
     }
@@ -54,7 +54,12 @@ pub const MessageLog = struct {
 test "messagelog.addMessage" {
     var ml = MessageLog.init(std.testing.allocator);
     defer ml.deinit();
-    const msg = std.fmt.allocPrint(std.testing.allocator, "message", .{}) catch @panic("eom");
+    const msg = std.fmt.allocPrint(std.testing.allocator, "message {d}", .{1}) catch @panic("eom");
     ml.addMessage(msg, color.White_rgb, true);
-    try expect(std.mem.eql(u8, ml.messages.items[0].text, msg));
+    std.testing.allocator.free(msg);
+    try expect(std.mem.eql(u8, ml.messages.items[0].text, "message 1"));
+    ml.addMessage("message 1", color.White_rgb, true);
+    try expect(ml.messages.items[0].count == 2);
+    ml.addMessage("Welcome to Zig Roguelike", color.White_rgb, false);
+    try expect(std.mem.eql(u8, ml.messages.items[1].text, "Welcome to Zig Roguelike"));
 }

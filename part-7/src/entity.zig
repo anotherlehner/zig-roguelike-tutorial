@@ -61,9 +61,11 @@ pub const ComponentFighter = struct {
 pub fn die(eng: *engine.Engine, e: *Entity) void {
     if (e.isPlayer) {
         const msg = std.fmt.allocPrint(eng.allocator, "You died!", .{}) catch @panic("eom");
+        defer eng.allocator.free(msg);
         eng.log.addMessage(msg, color.Player_die, true);
     } else {
         const msg = std.fmt.allocPrint(eng.allocator, "{s} died.", .{e.name}) catch @panic("eom");
+        defer eng.allocator.free(msg);
         eng.log.addMessage(msg, color.Enemy_die, true);
     }
 
