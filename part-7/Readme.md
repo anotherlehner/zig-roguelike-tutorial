@@ -101,7 +101,13 @@ This function will take a message log, among other things, and show it on the sc
 
 I don't have a `textwrap.wrap` function available the way the tutorial does. Due to this I crafted my messages to fit in the space I have available. This is something I could improve on in the future and either write my own wrap function given a maximum width or some other approach. One might think it would be naively simple to make a wrap function given a max width, however, that's only the case if we don't have annotated strings. If we start using color codes and other annotations within the message strings we'll also need to make sure we handle those appropriately (eg: if we wanted to use a different color for numbers within a message line than the rest of the message).
 
+My other message printing code was updated to use this new `MessageLog`.
 
+## Closeout
+
+I'm not sure if I'm going to continue doing a full writeup for each chapter. When I started this project I was envisioning a generic Zig roguelike tutorial that I could publish and everyone could use in their own projects. That was years ago and with AI being so pervasive now I'm not sure I see the point. Maybe that's my pessimism talking, I'm not sure quite yet. Either way we'll see during part-8 if I still write up my notes and how much in detail I go.
+
+# Other notes
 
 ## C interop
 
