@@ -2,7 +2,7 @@
 
 By Martin Lehner ([@anotherlehner](https://github.com/anotherlehner))
 
-12/2025: I have restarted this project this year with the hope of finally finishing a full implementation of the tutorial using libtcod and the latest version of Zig! So far I have fixed all the parts so they once again build on linux and osx and should run without major issues.
+10/2026: This project is now abandoned. Unfortunately with time and major life and technology changes I don't have the time to continue working on this. Maybe at some point in the future I'll return to it.
 
 ## Parts
 
@@ -24,9 +24,9 @@ To run each part cd into the folder and execute `zig build run`. To do this make
 
 [Part 6 - Doing (and taking) some damage](part-6)
 
-[Part 7 - Creating the interface](part-7) (IN PROGRESS)
+[Part 7 - Creating the interface](part-7)
 
-Part 8 - Items and inventory (TODO)
+[Part 8 - Items and inventory](part-8) (IN PROGRESS)
 
 Part 9 - Ranged scrolls and targeting (TODO)
 
@@ -84,4 +84,3 @@ https://www.reddit.com/r/roguelikedev/
 
 Note: I started this project in 2022 using a different username on gitlab.com (clockworkmartian) and have since come back to github and reclaimed my old anotherlehner account.
 
-AI: This project began before LLMs and generative AI was so widespread. Now that the world has changed I'm beginning to incorporate some generative AI into this project; specifically I'm going to be using it to manage the structure of the project, build scripts, troubleshooting, and upgrading versions. Since Zig is still moving pretty fast I think AI will be very helpful for me keeping all these parts up to date and making sure relevant changes are reflected in my descriptive text. That said, I will **NOT** be using AI to write the core code or write my tutorial language. This project has always been about _learning_ Zig rather than having an AI write Zig code _for_ me.

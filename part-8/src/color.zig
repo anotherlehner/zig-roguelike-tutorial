@@ -38,6 +38,11 @@ pub const Bar_text = White_rgb;
 pub const Bar_filled = rgb(0, 96, 0);
 pub const Bar_empty = rgb(64, 16, 16);
 
+pub const Invalid_rgb = rgb(255, 255, 0);
+pub const Impossible_rgb = rgb(128, 128, 128);
+pub const Error_rgb = rgb(255, 60, 60);
+pub const Health_Recovered_rgb = rgb(0, 255, 0);
+
 test "white rgb color" {
     const c = White_rgb;
     try expect(c.r == 255);

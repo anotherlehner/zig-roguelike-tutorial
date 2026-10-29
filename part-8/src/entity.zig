@@ -56,6 +56,18 @@ pub const ComponentFighter = struct {
     pub fn isAlive(self: *ComponentFighter) bool {
         return self.hp > 0;
     }
+
+    pub fn heal(self: *ComponentFighter, amount: i32) i32 {
+        const amountRecovered = @max(0, @min(amount, self.maxHp - self.hp));
+        self.setHp(self.hp + amount);
+        return amountRecovered;
+    }
+
+    pub fn takeDamage(self: *ComponentFighter, amount: i32) i32 {
+        const amountTaken = @max(0, @min(amount, self.hp));
+        self.setHp(self.hp - amount);
+        return amountTaken;
+    }
 };
 
 pub fn die(eng: *engine.Engine, e: *Entity) void {
